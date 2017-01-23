@@ -28,6 +28,7 @@ namespace INFILE
     int readInFile(std::string& FileName, bool BeVerbose);
     std::pair<uint32_t, uint32_t> getGridSize();
     uint32_t getGridElement(uint32_t X, uint32_t Y);
+    void setGridElement(uint32_t X, uint32_t Y, uint32_t Value);
     std::vector<std::vector<uint32_t>> getGrid();
 }
 

@@ -5,6 +5,7 @@
 #include <vector>
 #include <tuple>
 #include <algorithm>
+#include <queue>
 
 #include <unistd.h>
 
@@ -14,6 +15,7 @@
 
 #define R_BLANK 0
 #define R_OBSTRUCTED -1
+#define R_PIN 1
 
 namespace LAYOUT
 {
@@ -41,14 +43,12 @@ namespace ROUTER
     void addNet(std::vector<std::tuple<uint32_t, uint32_t, bool>> Net);
     void sizeGrids(uint32_t Nets, uint32_t X, uint32_t Y);
     void addObstruction(uint32_t X, uint32_t Y);
+    void addPin(uint32_t Net, uint32_t X, uint32_t Y);
 
     std::tuple<uint32_t, uint32_t, uint32_t> getGridSize();
     int32_t getGridElement(uint32_t Net, uint32_t X, uint32_t Y);
 
     void LeeMoore(uint32_t threads, LAYOUT::LayoutWidget *MainWindow, bool BeVerbose);
-    // The following function does the forward phase of the LeeMoore in a
-    // recursive manner. it returns coordinates of closest target, and its weight.
-    std::tuple<uint32_t, uint32_t, uint32_t> LeeMooreForward(uint32_t Weight, uint32_t Net, uint32_t StartX, uint32_t StartY, LAYOUT::LayoutWidget *MainWindow, bool BeVerbose);
 }
 
 #endif // ROUTER_HPP

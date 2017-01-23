@@ -7,9 +7,9 @@ namespace LAYOUT
     void *InitRoute(void *PlaceHolder)
     {
         // This is a stupid intermediate function needed for pthreads.
-        std::tuple<uint32_t, LAYOUT::LayoutWidget *, bool> Params;
-        Params = *(std::tuple<uint32_t, LAYOUT::LayoutWidget *, bool>*) PlaceHolder;
-        ROUTER::LeeMoore(std::get<0>(Params), std::get<1>(Params), std::get<2>(Params));
+        std::tuple<uint32_t, LAYOUT::LayoutWidget *, bool> *Params;
+        Params = (std::tuple<uint32_t, LAYOUT::LayoutWidget *, bool>*) PlaceHolder;
+        ROUTER::LeeMoore(std::get<0>(*Params), std::get<1>(*Params), std::get<2>(*Params));
         return NULL;                // disable stupid gcc warning
     }
 
@@ -28,9 +28,10 @@ namespace LAYOUT
         this->show();
         // Now we have initialized the GUI, we can now start the router
         pthread_t RouteThread;
-        std::tuple<uint32_t, LAYOUT::LayoutWidget *, bool> Params;
-        Params = std::make_tuple(ThreadCount, this, BeVerbose);
-        pthread_create(&RouteThread, NULL, InitRoute, (void *)(&Params));
+        std::tuple<uint32_t, LAYOUT::LayoutWidget *, bool>* Params;
+        Params = new std::tuple<uint32_t, LAYOUT::LayoutWidget *, bool>;
+        *Params = std::make_tuple(ThreadCount, this, BeVerbose);
+        pthread_create(&RouteThread, NULL, InitRoute, (void *)(Params));
     }
 
     void LayoutWidget::paintEvent(QPaintEvent *event)
@@ -105,7 +106,7 @@ namespace LAYOUT
                     else
                     {
                         GridPainter.fillRect((i*PixelsPerGridBlock)+1, (j*PixelsPerGridBlock)+1,
-                            PixelsPerGridBlock-1, PixelsPerGridBlock-1, Qt::red);
+                            PixelsPerGridBlock-1, PixelsPerGridBlock-1, Qt::black);
                         // GridPainter.drawText((i+0.3)*PixelsPerGridBlock, (j+0.75)*PixelsPerGridBlock, "7");
                     }
                 }
@@ -124,7 +125,7 @@ namespace LAYOUT
                 {
                     if (ROUTER::getGridElement(i, j, k) > 0)
                     {
-                        GridPainter.drawText((i+0.3)*PixelsPerGridBlock, (j+0.75)*PixelsPerGridBlock, std::to_string(ROUTER::getGridElement(i, j, k)).c_str());
+                        GridPainter.drawText((j+0.3)*PixelsPerGridBlock, (k+0.75)*PixelsPerGridBlock, std::to_string(ROUTER::getGridElement(i, j, k)).c_str());
                     }
                 }
             }

@@ -1,4 +1,4 @@
-#include "InFileReader.hpp"
+ #include "InFileReader.hpp"
 
 namespace INFILE
 {
@@ -47,6 +47,18 @@ namespace INFILE
         uint32_t NumWires;
         uint32_t NumPinsPerWire;
         InFile >> NumWires;
+        // Now setup the copy Grids that the Router uses.
+        ROUTER::sizeGrids(NumWires, GridXSize, GridYSize);
+        for (uint32_t i = 0; i < Grid.size(); i++)
+        {
+            for (uint32_t j = 0; j < Grid[i].size(); j++)
+            {
+                if(Grid[i][j] == IN_OBSTRUCTED)
+                {
+                    ROUTER::addObstruction(i, j);
+                }
+            }
+        }
         if (BeVerbose)
             std::cout << "\tINFILE: Will read " << NumWires << " wires.\n";
         for (uint32_t i = 0; i < NumWires; i++)
@@ -60,23 +72,11 @@ namespace INFILE
                 InFile >> TmpXLoc >> TmpYLoc;
                 Grid[TmpXLoc][TmpYLoc] = i+IN_OBSTRUCTED+1;
                 Net.push_back(std::make_tuple(TmpXLoc, TmpYLoc, false));
+                ROUTER::addPin(i, TmpXLoc, TmpYLoc);
                 if (BeVerbose)
                     std::cout << "\tINFILE: WIRE " << i+1 << ": PIN " << j+1 << ": X = " << TmpXLoc << ", Y = " << TmpYLoc << ".\n";
             }
             ROUTER::addNet(Net);
-        }
-
-        // Now setup the copy Grids that the Router uses.
-        ROUTER::sizeGrids(NumWires, GridXSize, GridYSize);
-        for (uint32_t i = 0; i < Grid.size(); i++)
-        {
-            for (uint32_t j = 0; j < Grid[i].size(); j++)
-            {
-                if(Grid[i][j] == IN_OBSTRUCTED)
-                {
-                    ROUTER::addObstruction(i, j);
-                }
-            }
         }
 
         return 0;
@@ -90,6 +90,11 @@ namespace INFILE
     uint32_t getGridElement(uint32_t X, uint32_t Y)
     {
         return Grid[X][Y];
+    }
+
+    void setGridElement(uint32_t X, uint32_t Y, uint32_t Value)
+    {
+        Grid[X][Y] = Value;
     }
 
     std::vector<std::vector<uint32_t>> getGrid()
