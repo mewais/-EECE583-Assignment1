@@ -52,7 +52,7 @@ namespace ROUTER
         return NetGrids[Net][X][Y];
     }
 
-    void LeeMoore(uint32_t threads, LAYOUT::LayoutWidget *MainWindow, bool BeVerbose)
+    uint32_t LeeMoore(uint32_t threads, LAYOUT::LayoutWidget *MainWindow, bool BeVerbose)
     {
         // Each net is handled by a thread (if possible)
         // Nets.size() is actually of "vector::size_type". throws a gcc error
@@ -60,6 +60,8 @@ namespace ROUTER
         if (BeVerbose)
             std::cout << "ROUTER: Router started.\n";
         omp_set_num_threads(std::min(threads, (uint32_t)Nets.size()));
+
+        uint32_t Unconnected = 0;
 
         #pragma omp parallel for
         for (uint32_t i = 0; i < Nets.size(); i++)
@@ -86,9 +88,12 @@ namespace ROUTER
                     std::get<2>(Nets[i][j]) = true;
                     std::queue<std::pair<uint32_t, uint32_t>> Visited;
                     Visited.push(std::make_pair(std::get<0>(Nets[i][j]), std::get<1>(Nets[i][j])));
-                    uint32_t TargetX, TargetY, TargetWeight;
+                    uint32_t TargetX = 0;           // Suppress annoying "uninitialized" warnings
+                    uint32_t TargetY = 0;           // Suppress annoying "uninitialized" warnings
+                    uint32_t TargetWeight = 0;      // Suppress annoying "uninitialized" warnings
                     uint32_t SourceX = std::get<0>(Visited.front());
                     uint32_t SourceY = std::get<1>(Visited.front());
+                    bool Found = false;
                     while(Visited.size())
                     {
                         // Check for out of bounds error first.
@@ -117,7 +122,6 @@ namespace ROUTER
                             }
                             else if (NetGrids[i][StartX+1][StartY] == R_PIN)
                             {
-                                bool Found = false;
                                 for(uint32_t k = j; k < Nets[i].size(); k++)
                                 {
                                     if(std::get<0>(Nets[i][k]) == StartX+1 &&
@@ -148,7 +152,6 @@ namespace ROUTER
                             }
                             else if (NetGrids[i][StartX-1][StartY] == R_PIN)
                             {
-                                bool Found = false;
                                 for(uint32_t k = j; k < Nets[i].size(); k++)
                                 {
                                     if(std::get<0>(Nets[i][k]) == StartX-1 &&
@@ -179,7 +182,6 @@ namespace ROUTER
                             }
                             else if (NetGrids[i][StartX][StartY+1] == R_PIN)
                             {
-                                bool Found = false;
                                 for(uint32_t k = j; k < Nets[i].size(); k++)
                                 {
                                     if(std::get<0>(Nets[i][k]) == StartX &&
@@ -210,7 +212,6 @@ namespace ROUTER
                             }
                             else if (NetGrids[i][StartX][StartY-1] == R_PIN)
                             {
-                                bool Found = false;
                                 for(uint32_t k = j; k < Nets[i].size(); k++)
                                 {
                                     if(std::get<0>(Nets[i][k]) == StartX &&
@@ -246,13 +247,30 @@ namespace ROUTER
                     // Now that we could reach a target, we should now start phase
                     // 2 and connect it. every cell that is part of the wire is
                     // now added to the Net pins and marked visited.
-                    while(true)
+                    if(!Found)
+                    {
+                        for (uint32_t k = 0; k < Nets[i].size(); k++)
+                        {
+                            if (std::get<2>(Nets[i][k]) == false)
+                            {
+                                Unconnected++;
+                            }
+                        }
+                    }
+                    while(Found)
                     {
                         if (BeVerbose)
                             std::cout << "LEEMOORE: Phase2: Net" << i << " Connected cell " << TargetX << ", " << TargetY << " with weight " << TargetWeight << ".\n";
 
                         INFILE::setGridElement(TargetX, TargetY, i+IN_OBSTRUCTED+1);
                         NetGrids[i][TargetX][TargetY] = R_PIN;
+                        for (uint32_t k = 0; k < NetGrids.size(); k++)
+                        {
+                            if(k != i)
+                            {
+                                NetGrids[k][TargetX][TargetY] = R_NET_OBSTRUCTED;
+                            }
+                        }
 
                         if (MainWindow)
                         {
@@ -309,7 +327,7 @@ namespace ROUTER
                         for (uint32_t l = 0; l < NetGrids[i][k].size(); l++)
                         {
                             if (NetGrids[i][k][l] != R_OBSTRUCTED && NetGrids[i][k][l] != R_PIN
-                                && NetGrids[i][k][l] != R_BLANK)
+                                && NetGrids[i][k][l] != R_BLANK && NetGrids[i][k][l] != R_NET_OBSTRUCTED)
                             {
                                 NetGrids[i][k][l] = R_BLANK;
                             }
@@ -318,6 +336,37 @@ namespace ROUTER
                 }
             }
         }
-        return;
+        return Unconnected;
+    }
+
+    // QUESTION: should we do this after each individual route? or after finishing?
+    // ANSWER: I'm not sure but I think once after finishing everything is better,
+    // It allows for trying all possible rip-ups in a BFS manner!
+    void ripUp(uint32_t threads, LAYOUT::LayoutWidget *MainWindow, bool BeVerbose)
+    {
+        // Loop through the Nets and find if there're overlapping nets.
+        // every thread will take some rows of all the grids and handle it.
+        omp_set_num_threads(threads);
+
+        #pragma omp parallel for
+        for (uint32_t i = 0; i < Nets.size(); i++)       // Loop through nets
+        {
+            for (uint32_t k = 0; k < Nets[i].size(); k++)     // For every point in the net
+            {
+                for (uint32_t j = i+1; j < Nets.size(); j++)    // Compare the net we have with following nets
+                {
+                    // if any of Is elements are in Js elements.
+                    if (std::find(Nets[j].begin(), Nets[j].end(), Nets[i][k]) != Nets[j].end());
+                    {
+                        // We have indeed found a conflict! There may actually
+                        // be other conflicts but we will just ignore them for
+                        // now, they will pop up again later!
+                        // We will try two things. keeping the first and rerouting
+                        // second. then the other way around. whichever succeeds first.
+
+                    }
+                }
+            }
+        }
     }
 }

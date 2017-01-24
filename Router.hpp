@@ -15,6 +15,7 @@
 
 #define R_BLANK 0
 #define R_OBSTRUCTED -1
+#define R_NET_OBSTRUCTED -2
 #define R_PIN 1
 
 namespace LAYOUT
@@ -48,7 +49,7 @@ namespace ROUTER
     std::tuple<uint32_t, uint32_t, uint32_t> getGridSize();
     int32_t getGridElement(uint32_t Net, uint32_t X, uint32_t Y);
 
-    void LeeMoore(uint32_t threads, LAYOUT::LayoutWidget *MainWindow, bool BeVerbose);
+    uint32_t LeeMoore(uint32_t threads, LAYOUT::LayoutWidget *MainWindow, bool BeVerbose);
 }
 
 #endif // ROUTER_HPP

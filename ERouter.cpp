@@ -22,7 +22,7 @@ int main(int argc, char** argv)
     boost::program_options::options_description Description("Options");
     Description.add_options()
         ("help,h", "Print this help message.")
-        ("threads,t", boost::program_options::value<uint32_t>(&ThreadCount)->default_value(4), "Specify number of threads to use if using the CPU (Default is 4).")
+        ("threads,t", boost::program_options::value<uint32_t>(&ThreadCount)->default_value(4), "Specify number of threads to use if using the CPU (Sorry, Disabled for now).")
         ("infile,i", boost::program_options::value<std::string>(&FileName)->required(), "Specify the input file.")
         ("verbose,v", boost::program_options::bool_switch(&BeVerbose), "Enable Verbose Output.")
         ("GUI", boost::program_options::bool_switch(&UseGUI), "Enable GUI Interface.")
@@ -65,6 +65,7 @@ int main(int argc, char** argv)
     if (BeVerbose)
         std::cout << "ERouter: File read successfully.\n";
 
+    ThreadCount = 1;
     if (UseGUI)
     {
         // When using the GUI, we need to have a separate thread for the GUI and

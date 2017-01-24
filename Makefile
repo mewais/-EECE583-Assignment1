@@ -1,8 +1,8 @@
 CC = gcc
 CXX = g++
 
-CCFLAGS = -Wall -O2 -fopenmp -lpthread
-CXXFLAGS = -Wall -O2 -fopenmp -lpthread -std=c++11
+CCFLAGS = -Wno-sign-compare -Wall -O2 -fopenmp -lpthread
+CXXFLAGS = -Wno-sign-compare -Wall -O2 -fopenmp -lpthread -std=c++11
 LDFLAGS = -fPIC -c
 CCFLAGS += -g
 CXXFLAGS += -g
