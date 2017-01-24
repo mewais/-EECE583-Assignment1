@@ -32,7 +32,7 @@ namespace LAYOUT
             void paintEvent(QPaintEvent *event);
 
         public:
-            LayoutWidget(uint32_t ThreadCount, bool BeVerbose);
+            LayoutWidget(uint32_t ThreadCount, bool BeVerbose, bool Blocking);
     };
 }
 

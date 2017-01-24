@@ -49,7 +49,7 @@ namespace ROUTER
     std::tuple<uint32_t, uint32_t, uint32_t> getGridSize();
     int32_t getGridElement(uint32_t Net, uint32_t X, uint32_t Y);
 
-    uint32_t LeeMoore(uint32_t threads, LAYOUT::LayoutWidget *MainWindow, bool BeVerbose);
+    uint32_t LeeMoore(uint32_t threads, LAYOUT::LayoutWidget *MainWindow, bool BeVerbose, bool Blocking);
 }
 
 #endif // ROUTER_HPP

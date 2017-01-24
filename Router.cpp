@@ -52,7 +52,7 @@ namespace ROUTER
         return NetGrids[Net][X][Y];
     }
 
-    uint32_t LeeMoore(uint32_t threads, LAYOUT::LayoutWidget *MainWindow, bool BeVerbose)
+    uint32_t LeeMoore(uint32_t threads, LAYOUT::LayoutWidget *MainWindow, bool BeVerbose, bool Blocking)
     {
         // Each net is handled by a thread (if possible)
         // Nets.size() is actually of "vector::size_type". throws a gcc error
@@ -63,7 +63,7 @@ namespace ROUTER
 
         uint32_t Unconnected = 0;
 
-        #pragma omp parallel for
+        #pragma omp parallel for shared(Unconnected)
         for (uint32_t i = 0; i < Nets.size(); i++)
         {
             // Each thread will start by picking a start point. A start point is
@@ -102,7 +102,7 @@ namespace ROUTER
                         if (MainWindow)
                         {
                             MainWindow->update();
-                            usleep(50000);
+                            usleep(20000);
                             // std::cin.ignore();
                         }
 
@@ -249,13 +249,7 @@ namespace ROUTER
                     // now added to the Net pins and marked visited.
                     if(!Found)
                     {
-                        for (uint32_t k = 0; k < Nets[i].size(); k++)
-                        {
-                            if (std::get<2>(Nets[i][k]) == false)
-                            {
-                                Unconnected++;
-                            }
-                        }
+                        Unconnected++;
                     }
                     while(Found)
                     {
@@ -264,18 +258,21 @@ namespace ROUTER
 
                         INFILE::setGridElement(TargetX, TargetY, i+IN_OBSTRUCTED+1);
                         NetGrids[i][TargetX][TargetY] = R_PIN;
-                        for (uint32_t k = 0; k < NetGrids.size(); k++)
+                        if (Blocking)
                         {
-                            if(k != i)
+                            for (uint32_t k = 0; k < NetGrids.size(); k++)
                             {
-                                NetGrids[k][TargetX][TargetY] = R_NET_OBSTRUCTED;
+                                if(k != i)
+                                {
+                                    NetGrids[k][TargetX][TargetY] = R_NET_OBSTRUCTED;
+                                }
                             }
                         }
 
                         if (MainWindow)
                         {
                             MainWindow->update();
-                            usleep(50000);
+                            usleep(20000);
                             // std::cin.ignore();
                         }
 
@@ -337,36 +334,5 @@ namespace ROUTER
             }
         }
         return Unconnected;
-    }
-
-    // QUESTION: should we do this after each individual route? or after finishing?
-    // ANSWER: I'm not sure but I think once after finishing everything is better,
-    // It allows for trying all possible rip-ups in a BFS manner!
-    void ripUp(uint32_t threads, LAYOUT::LayoutWidget *MainWindow, bool BeVerbose)
-    {
-        // Loop through the Nets and find if there're overlapping nets.
-        // every thread will take some rows of all the grids and handle it.
-        omp_set_num_threads(threads);
-
-        #pragma omp parallel for
-        for (uint32_t i = 0; i < Nets.size(); i++)       // Loop through nets
-        {
-            for (uint32_t k = 0; k < Nets[i].size(); k++)     // For every point in the net
-            {
-                for (uint32_t j = i+1; j < Nets.size(); j++)    // Compare the net we have with following nets
-                {
-                    // if any of Is elements are in Js elements.
-                    if (std::find(Nets[j].begin(), Nets[j].end(), Nets[i][k]) != Nets[j].end());
-                    {
-                        // We have indeed found a conflict! There may actually
-                        // be other conflicts but we will just ignore them for
-                        // now, they will pop up again later!
-                        // We will try two things. keeping the first and rerouting
-                        // second. then the other way around. whichever succeeds first.
-
-                    }
-                }
-            }
-        }
     }
 }

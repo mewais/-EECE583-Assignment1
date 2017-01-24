@@ -15,6 +15,7 @@ int main(int argc, char** argv)
 {
     bool UseGUI = false;
     bool UseGPU = false;
+    bool Blocking = false;
     bool BeVerbose = false;
     uint32_t ThreadCount;
     std::string FileName;
@@ -22,9 +23,10 @@ int main(int argc, char** argv)
     boost::program_options::options_description Description("Options");
     Description.add_options()
         ("help,h", "Print this help message.")
-        ("threads,t", boost::program_options::value<uint32_t>(&ThreadCount)->default_value(4), "Specify number of threads to use if using the CPU (Sorry, Disabled for now).")
+        ("threads,t", boost::program_options::value<uint32_t>(&ThreadCount)->default_value(4), "Specify number of threads to use if using the CPU.")
         ("infile,i", boost::program_options::value<std::string>(&FileName)->required(), "Specify the input file.")
         ("verbose,v", boost::program_options::bool_switch(&BeVerbose), "Enable Verbose Output.")
+        ("blocking,b", boost::program_options::bool_switch(&Blocking), "Make Nets Blocking (Forces 1 thread only).")
         ("GUI", boost::program_options::bool_switch(&UseGUI), "Enable GUI Interface.")
         ("GPU", boost::program_options::bool_switch(&UseGPU), "Run on a CUDA enabled GPU.");
     boost::program_options::variables_map VariableMap;
@@ -65,7 +67,8 @@ int main(int argc, char** argv)
     if (BeVerbose)
         std::cout << "ERouter: File read successfully.\n";
 
-    ThreadCount = 1;
+    if (Blocking)
+        ThreadCount = 1;
     if (UseGUI)
     {
         // When using the GUI, we need to have a separate thread for the GUI and
@@ -82,11 +85,12 @@ int main(int argc, char** argv)
         int gui_argc = sizeof(gui_argv) / sizeof(char*) - 1;
         QApplication *App = new QApplication(gui_argc, gui_argv);
         // The following will call the Router
-        LAYOUT::LayoutWidget *MainWindow = new LAYOUT::LayoutWidget(ThreadCount, BeVerbose);
+        LAYOUT::LayoutWidget *MainWindow = new LAYOUT::LayoutWidget(ThreadCount, BeVerbose, Blocking);
         App->exec();
     }
     else
     {
-        ROUTER::LeeMoore(ThreadCount, NULL, BeVerbose);
+        int Unconnected = ROUTER::LeeMoore(ThreadCount, NULL, BeVerbose, Blocking);
+        std::cout << "Failed to connect " << Unconnected << " pins.\n";
     }
 }

@@ -7,13 +7,14 @@ namespace LAYOUT
     void *InitRoute(void *PlaceHolder)
     {
         // This is a stupid intermediate function needed for pthreads.
-        std::tuple<uint32_t, LAYOUT::LayoutWidget *, bool> *Params;
-        Params = (std::tuple<uint32_t, LAYOUT::LayoutWidget *, bool>*) PlaceHolder;
-        ROUTER::LeeMoore(std::get<0>(*Params), std::get<1>(*Params), std::get<2>(*Params));
+        std::tuple<uint32_t, LAYOUT::LayoutWidget *, bool, bool> *Params;
+        Params = (std::tuple<uint32_t, LAYOUT::LayoutWidget *, bool, bool>*) PlaceHolder;
+        int Unconnected = ROUTER::LeeMoore(std::get<0>(*Params), std::get<1>(*Params), std::get<2>(*Params), std::get<3>(*Params));
+        std::cout << "Failed to connect " << Unconnected << " pins.\n";
         return NULL;                // disable stupid gcc warning
     }
 
-    LayoutWidget::LayoutWidget(uint32_t ThreadCount, bool BeVerbose) : BeVerbose(BeVerbose)
+    LayoutWidget::LayoutWidget(uint32_t ThreadCount, bool BeVerbose, bool Blocking) : BeVerbose(BeVerbose)
     {
         // As far as I know, QT doesn't have a ready for use Grid Coordinate
         // System, It does however use a "pixel" coordinate system for drawing.
@@ -28,9 +29,9 @@ namespace LAYOUT
         this->show();
         // Now we have initialized the GUI, we can now start the router
         pthread_t RouteThread;
-        std::tuple<uint32_t, LAYOUT::LayoutWidget *, bool>* Params;
-        Params = new std::tuple<uint32_t, LAYOUT::LayoutWidget *, bool>;
-        *Params = std::make_tuple(ThreadCount, this, BeVerbose);
+        std::tuple<uint32_t, LAYOUT::LayoutWidget *, bool, bool>* Params;
+        Params = new std::tuple<uint32_t, LAYOUT::LayoutWidget *, bool, bool>;
+        *Params = std::make_tuple(ThreadCount, this, BeVerbose, Blocking);
         pthread_create(&RouteThread, NULL, InitRoute, (void *)(Params));
     }
 
